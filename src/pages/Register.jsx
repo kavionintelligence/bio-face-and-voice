@@ -14,7 +14,7 @@ import {
   buildFaceTemplate,
   findBestFaceMatch,
 } from "../lib/faceEngine.js";
-import { findUserByName, listUsers, saveUser } from "../lib/storage.js";
+import { findUserByName, listUsers, nameKey, saveUser } from "../lib/storage.js";
 
 const STEPS = ["Details", "Voice", "Face", "Done"];
 
@@ -113,7 +113,7 @@ export default function Register() {
 
         // Flag an obvious re-enrolment under a second name; still allow it,
         // because twins and shared demo devices are real.
-        const others = listUsers().filter((u) => u.nameKey !== name.trim().toLowerCase());
+        const others = listUsers().filter((u) => u.nameKey !== nameKey(name));
         const match = findBestFaceMatch(embeddings, others);
         if (match?.accepted) {
           setDuplicateWarning(

@@ -11,13 +11,19 @@
  *   resize to 112x112 via 5-point warp -> (pixel - 127.5) / 128 -> NCHW float32
  */
 
-import * as ort from "onnxruntime-web";
+// wasm-only entry: this app never uses the WebGPU/WebGL backends, and the
+// full build drags in a much larger runtime.
+import * as ort from "onnxruntime-web/wasm";
 import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
 
 // Vite serves .wasm with a MIME type onnxruntime rejects; pull the binaries from a CDN.
+// The version is read from the bundled runtime so the JS glue and the .wasm
+// binaries can never drift apart when the dependency is bumped.
+const ORT_VERSION = ort.env?.versions?.web || "1.24.2";
 if (typeof ort.env?.wasm !== "undefined") {
-  ort.env.wasm.wasmPaths = "https://cdn.jsdelivr.net/npm/onnxruntime-web@1.24.3/dist/";
-  // Phones report a lot of cores but throttle hard; two threads is the sweet spot.
+  ort.env.wasm.wasmPaths = `https://cdn.jsdelivr.net/npm/onnxruntime-web@${ORT_VERSION}/dist/`;
+  // Single-threaded: SharedArrayBuffer needs COOP/COEP headers that a plain
+  // static deploy does not set, and multi-threaded ORT silently falls back anyway.
   ort.env.wasm.numThreads = 1;
 }
 

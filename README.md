@@ -81,10 +81,29 @@ Camera and microphone need a **secure context**. `localhost` counts; a plain-HTT
 does not. To test on a phone during development, either deploy to Vercel or run
 `npm run dev -- --https` and accept the certificate.
 
+### A note on dependencies
+
+Every dependency is pinned to an **exact** version, matching the set that
+`data-sharing-client` resolved to, so this tree is known to work together
+(vite 7.3.1 / esbuild 0.27.3 / rollup 4.59.0 / react 19.2.4).
+
+There is no `package-lock.json`: on the machine this was built on, `npm install` could not
+fetch tarballs from the registry (it hung, then died with npm's "Exit handler never called"),
+so `node_modules` was populated by copying the already-installed tree from
+`data-sharing-client-main`. Exact pins keep that reproducible. On a normal network, or on
+Vercel, a plain `npm install` resolves the same versions. Run `npm install` once somewhere with
+working registry access and commit the lockfile it produces.
+
 ## Deploying to Vercel
 
 The repo is a standard static Vite build; `vercel.json` adds the SPA rewrite and caches the
-13 MB `face.onnx` immutably.
+13 MB `face.onnx` immutably. A production build is about **13.4 MB**, almost all of it the
+model: the JS bundle is 446 KB (142 KB gzipped) and the CSS 8.7 KB.
+
+`faceEngine.js` imports `onnxruntime-web/wasm` (no WebGPU/WebGL backends) and `vite.config.js`
+enables the package's `onnxruntime-web-use-extern-wasm` export condition. Without that
+condition Vite emits an unused 25 MB `.wasm` asset, because the runtime is pointed at the
+jsDelivr copy instead.
 
 ```bash
 npx vercel --prod
